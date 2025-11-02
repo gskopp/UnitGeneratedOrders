@@ -3,6 +3,11 @@
 def discQ(D):
     return ((D%4==0 or D%4==1) and not(is_square(D)))
 
+# fund_discQ(D) : integer -> boolean
+# return true if D is a discriminant of a maximal quadratic order, false otherwise
+def fund_discQ(D):
+    return ((D%4==0 and is_squarefree(D/4)) or (D%4==1 and is_squarefree(D))) and not(is_square(D))
+
 # genus(D) : discriminant -> integer
 # return the order of the genus group,
 # or equivalently, the order of the 2-torsion subgroup of the narrow class group
@@ -15,6 +20,28 @@ def genus(D):
     if D%32==0:
         return 2^(r+1)
 
+# genus_slow(D) : discriminant -> integer
+# return the order of the genus group,
+# or equivalently, the order of the 2-torsion subgroup of the narrow class group
+def genus_slow(D):
+    pos_divs=divisors(D)
+    neg_divs=[-d for d in pos_divs]
+    splits={1}
+    for d in (pos_divs+neg_divs):
+        if fund_discQ(d) and discQ(D/d):
+            splits.add(min(squarefree_part(d),squarefree_part(D/d)))
+    return len(splits)
+
+# wide_genus_slow(D) : discriminant -> integer
+# returns the order of the 2-torsion subgroup of the wide class group
+def wide_genus_slow(D):
+    pos_divs=divisors(D)
+    splits={1}
+    for d in pos_divs:
+        if fund_discQ(d) and discQ(D/d):
+            splits.add(min(squarefree_part(d),squarefree_part(D/d)))
+    return len(splits)
+
 # fd(D) : discriminant -> list
 # returns [f,D0] where D0 is a fundamental discriminant and D=f^2*D0
 def fd(D):
@@ -24,9 +51,9 @@ def fd(D):
     else:
         return [(D/(4*s))^(1/2),4*s]
 
-# is_integer(n) : real -> boolean
+# integerQ(n) : real -> boolean
 # return true n is an integer, false otherwise
-def is_integer(n):
+def integerQ(n):
     return n==floor(n)
 
 # negpell(D) : discriminant -> boolean
@@ -38,16 +65,24 @@ def negpell(D):
     uconj=u.trace()-u
     n=1
     while true:
-        if is_integer((u^n-uconj^n)/D^(1/2)):
+        if integerQ((u^n-uconj^n)/D^(1/2)):
             return norm(u^n)==-1
         n+=1
 
 # wide_genus(D) : discriminant -> integer
 # returns the order of the 2-torsion subgroup of the wide class group
 def wide_genus(D):
-    #g=genus(D)
-    #if negpell(D):
-    #    return g
-    #else:
-    #    return g/2
-    print("Not implemented currently. Previous implementation was incorrect.")
+    # To do: Write a faster implementation using the factorization of D rather than iterating through the divisiors
+    return wide_genus_slow(D)
+
+# split_ntwQ(D) : discriminant -> boolean
+# returns True if the exact sequence 1 -> ker -> Cl^+(O_D) -> Cl(O_D) -> 1 is split, and False otherwise
+def split_ntwQ(D):
+    ng=genus(D)
+    wg=wide_genus(D)
+    if negpell(D):
+        return True
+    elif ng==wg:
+        return False
+    else:
+        return True
